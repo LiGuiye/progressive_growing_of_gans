@@ -68,7 +68,7 @@ class TFRecordExporter:
             assert self.shape[0] in [1, 3]
             assert self.shape[1] == self.shape[2]
             assert self.shape[1] == 2**self.resolution_log2
-            tfr_opt = tf.python_io.TFRecordOptions(tf.python_io.TFRecordCompressionType.NONE)
+            tfr_opt = tf.python_io.TFRecordOptions(tf.compat.v1.python_io.TFRecordCompressionType.NONE)
             for lod in range(self.resolution_log2 - 1):
                 tfr_file = self.tfr_prefix + '-r%02d.tfrecords' % (self.resolution_log2 - lod)
                 self.tfr_writers.append(tf.python_io.TFRecordWriter(tfr_file, tfr_opt))
@@ -77,7 +77,7 @@ class TFRecordExporter:
             if lod:
                 img = img.astype(np.float32)
                 img = (img[:, 0::2, 0::2] + img[:, 0::2, 1::2] + img[:, 1::2, 0::2] + img[:, 1::2, 1::2]) * 0.25
-            quant = np.rint(img).clip(0, 255).astype(np.uint8)
+            quant = np.rint(img).clip(0, 255).astype(np.uint8) # Round pixel value to the nearest integer limit values in (0,255).
             ex = tf.train.Example(features=tf.train.Features(feature={
                 'shape': tf.train.Feature(int64_list=tf.train.Int64List(value=quant.shape)),
                 'data': tf.train.Feature(bytes_list=tf.train.BytesList(value=[quant.tostring()]))}))
@@ -597,7 +597,7 @@ def create_celebahq(tfrecord_dir, celeba_dir, delta_dir, num_threads=4, num_task
 
 def create_from_images(tfrecord_dir, image_dir, shuffle):
     print('Loading images from "%s"' % image_dir)
-    image_filenames = sorted(glob.glob(os.path.join(image_dir, '*')))
+    image_filenames = sorted(glob.glob(os.path.join(image_dir, '*.tif')))
     if len(image_filenames) == 0:
         error('No input images found')
         
@@ -736,5 +736,6 @@ def execute_cmdline(argv):
 
 if __name__ == "__main__":
     execute_cmdline(sys.argv)
+    create_from_images("./DataSet", "/home/guiyli/Documents/Satellite-Image-Super-Resolution/DataSet/DEM/10K/NewOrleans/32X32/train/",1)
 
 #----------------------------------------------------------------------------

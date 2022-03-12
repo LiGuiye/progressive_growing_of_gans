@@ -75,9 +75,13 @@ class TFRecordExporter:
         assert img.shape == self.shape
         for lod, tfr_writer in enumerate(self.tfr_writers):
             if lod:
-                img = img.astype(np.float32)
+                img = img.astype(np.float64)
                 img = (img[:, 0::2, 0::2] + img[:, 0::2, 1::2] + img[:, 1::2, 0::2] + img[:, 1::2, 1::2]) * 0.25
-            quant = np.rint(img).clip(0, 255).astype(np.uint8) # Round pixel value to the nearest integer limit values in (0,255).
+            
+            # don't know why ----------------------------------------------
+            # quant = np.rint(img).clip(0, 255).astype(np.uint8) # Round pixel value to the nearest integer limit values in (0,255).
+            quant = img.clip(0, 255).astype(np.float64)
+
             ex = tf.train.Example(features=tf.train.Features(feature={
                 'shape': tf.train.Feature(int64_list=tf.train.Int64List(value=quant.shape)),
                 'data': tf.train.Feature(bytes_list=tf.train.BytesList(value=[quant.tostring()]))}))
@@ -736,6 +740,6 @@ def execute_cmdline(argv):
 
 if __name__ == "__main__":
     execute_cmdline(sys.argv)
-    create_from_images("./DataSet", "/home/guiyli/Documents/Satellite-Image-Super-Resolution/DataSet/DEM/10K/NewOrleans/32X32/train/",1)
+    create_from_images("./DataSet", "/home/guiyli/Documents/DataSet/DEM/DEM_merge_0_255_float64/512X512_19000/train/",1)
 
 #----------------------------------------------------------------------------

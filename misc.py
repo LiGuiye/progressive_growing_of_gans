@@ -19,6 +19,7 @@ import PIL.Image
 import config
 import dataset
 import legacy
+import cv2
 
 #----------------------------------------------------------------------------
 # Convenience wrappers for pickle that are able to load data produced by
@@ -68,19 +69,33 @@ def convert_to_pil_image(image, drange=[0,1]):
             image = image.transpose(1, 2, 0) # CHW -> HWC
 
     image = adjust_dynamic_range(image, drange, [0,255])
-    image = np.rint(image).clip(0, 255).astype(np.uint8)
+    image = image.clip(0, 255).astype(np.float32)
     format = 'RGB' if image.ndim == 3 else 'L'
     return PIL.Image.fromarray(image, format)
 
+def convert_to_cv_image_save(image, drange=[0,1], path=''):
+    assert image.ndim == 2 or image.ndim == 3
+    if image.ndim == 3:
+        if image.shape[0] == 1:
+            image = image[0] # grayscale CHW => HW
+        else:
+            image = image.transpose(1, 2, 0) # CHW -> HWC
+    image = adjust_dynamic_range(image, drange, [0,255])
+    image = image.clip(0, 255).astype(np.float32)
+    cv2.imwrite(path, image, [cv2.IMWRITE_TIFF_COMPRESSION, 0])
+
 def save_image(image, filename, drange=[0,1], quality=95):
-    img = convert_to_pil_image(image, drange)
-    if '.jpg' in filename:
-        img.save(filename,"JPEG", quality=quality, optimize=True)
-    else:
-        img.save(filename)
+    # img = convert_to_pil_image(image, drange)
+    # if '.jpg' in filename:
+    #     img.save(filename,"JPEG", quality=quality, optimize=True)
+    # else:
+    #     img.save(filename)
+    convert_to_cv_image_save(image, filename)
 
 def save_image_grid(images, filename, drange=[0,1], grid_size=None):
-    convert_to_pil_image(create_image_grid(images, grid_size), drange).save(filename)
+    # convert_to_pil_image(create_image_grid(images, grid_size), drange).save(filename)
+    convert_to_cv_image_save(create_image_grid(images, grid_size), drange, filename)
+    
 
 #----------------------------------------------------------------------------
 # Logging of stdout and stderr to a file.

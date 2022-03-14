@@ -75,12 +75,12 @@ class TFRecordExporter:
         assert img.shape == self.shape
         for lod, tfr_writer in enumerate(self.tfr_writers):
             if lod:
-                img = img.astype(np.float64)
+                img = img.astype(np.float32)
                 img = (img[:, 0::2, 0::2] + img[:, 0::2, 1::2] + img[:, 1::2, 0::2] + img[:, 1::2, 1::2]) * 0.25
             
             # don't know why ----------------------------------------------
             # quant = np.rint(img).clip(0, 255).astype(np.uint8) # Round pixel value to the nearest integer limit values in (0,255).
-            quant = img.clip(0, 255).astype(np.float64)
+            quant = img.clip(0, 255).astype(np.float32)
 
             ex = tf.train.Example(features=tf.train.Features(feature={
                 'shape': tf.train.Feature(int64_list=tf.train.Int64List(value=quant.shape)),
@@ -605,7 +605,7 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
     if len(image_filenames) == 0:
         error('No input images found')
         
-    img = np.asarray(PIL.Image.open(image_filenames[0]))
+    img = np.asarray(PIL.Image.open(image_filenames[1]))
     resolution = img.shape[0]
     channels = img.shape[2] if img.ndim == 3 else 1
     if img.shape[1] != resolution:
@@ -623,6 +623,14 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
                 img = img[np.newaxis, :, :] # HW => CHW
             else:
                 img = img.transpose(2, 0, 1) # HWC => CHW
+            
+            # --------------------------------------------------------------
+            # stretch to 0-255
+            lowest = img.min()
+            highest = img.max()
+            if not lowest==highest: # else keep original data
+                img = (img-lowest)*255/(highest-lowest) 
+            # --------------------------------------------------------------
             tfr.add_image(img)
 
 #----------------------------------------------------------------------------
@@ -739,7 +747,7 @@ def execute_cmdline(argv):
 #----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    execute_cmdline(sys.argv)
-    create_from_images("./DataSet", "/home/guiyli/Documents/DataSet/DEM/DEM_merge_0_255_float64/512X512_19000/train/",1)
+    # execute_cmdline(sys.argv)
+    create_from_images("./datasets/dem_merge_512", "/home/guiyli/Documents/DataSet/DEM/DEM_merge_0_255_float32/512X512_19600/train",1)
 
 #----------------------------------------------------------------------------
